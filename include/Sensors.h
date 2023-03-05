@@ -2,8 +2,12 @@
 
 #define _SENSORS
 
-#define INA260_SYSTEM_ADDR 0x40
-#define INA260_STROBE_ADDR 0x41
+#define INA260_SYS_ADDR 0x40
+#define INA260_PROBE_ADDR 0x41
+#define INA260_ORIN_ADDR 0x42
+#define INA260_DISP_ADDR 0x44
+#define INA260_CAM_ADDR 0x45
+
 
 #include <Arduino.h>
 #include <Adafruit_Sensor.h>
@@ -13,8 +17,11 @@
 #include "Config.h"
 
 Adafruit_BME280 _bme; // I2C
-Adafruit_INA260 _ina260_a = Adafruit_INA260();
-Adafruit_INA260 _ina260_b = Adafruit_INA260();
+Adafruit_INA260 _ina260_sys = Adafruit_INA260();
+Adafruit_INA260 _ina260_probe = Adafruit_INA260();
+Adafruit_INA260 _ina260_orin = Adafruit_INA260();
+Adafruit_INA260 _ina260_disp = Adafruit_INA260();
+Adafruit_INA260 _ina260_cam = Adafruit_INA260();
 
 class Sensors {
 
@@ -23,9 +30,9 @@ class Sensors {
    
     public:
 
-        float voltage[2];
-        float current[2];
-        float power[2];
+        float voltage[5];
+        float current[5];
+        float power[5];
         float temperature;
         float pressure;
         float humidity;
@@ -39,7 +46,7 @@ class Sensors {
 
             sensorsValid = true;
             
-            if (!_ina260_a.begin(INA260_SYSTEM_ADDR)) {
+            if (!_ina260_sys.begin(INA260_SYS_ADDR)) {
                 DEBUGPORT.println("Couldn't find INA260 A chip");
                 sensorsValid = false;
             }
@@ -47,7 +54,31 @@ class Sensors {
                 DEBUGPORT.println("System INA260 OK");
             }
 
-            if (!_ina260_b.begin(INA260_STROBE_ADDR)) {
+            if (!_ina260_probe.begin(INA260_PROBE_ADDR)) {
+                DEBUGPORT.println("Couldn't find INA260 B chip");
+                sensorsValid = false;
+            }
+            else {
+                DEBUGPORT.println("Strobe INA260 OK");
+            }
+
+            if (!_ina260_orin.begin(INA260_ORIN_ADDR)) {
+                DEBUGPORT.println("Couldn't find INA260 B chip");
+                sensorsValid = false;
+            }
+            else {
+                DEBUGPORT.println("Strobe INA260 OK");
+            }
+
+            if (!_ina260_disp.begin(INA260_DISP_ADDR)) {
+                DEBUGPORT.println("Couldn't find INA260 B chip");
+                sensorsValid = false;
+            }
+            else {
+                DEBUGPORT.println("Strobe INA260 OK");
+            }
+
+            if (!_ina260_cam.begin(INA260_CAM_ADDR)) {
                 DEBUGPORT.println("Couldn't find INA260 B chip");
                 sensorsValid = false;
             }
@@ -81,12 +112,21 @@ class Sensors {
             temperature = _bme.readTemperature();
             pressure = _bme.readPressure();
             humidity = _bme.readHumidity();
-            current[0] = _ina260_a.readCurrent();
-            voltage[0] = _ina260_a.readBusVoltage();
-            power[0] = _ina260_a.readPower();
-            current[1] = _ina260_b.readCurrent();
-            voltage[1] = _ina260_b.readBusVoltage();
-            power[1] = _ina260_b.readPower();
+            current[0] = _ina260_sys.readCurrent();
+            voltage[0] = _ina260_sys.readBusVoltage();
+            power[0] = _ina260_sys.readPower();
+            current[1] = _ina260_probe.readCurrent();
+            voltage[1] = _ina260_probe.readBusVoltage();
+            power[1] = _ina260_probe.readPower();
+            current[2] = _ina260_orin.readCurrent();
+            voltage[2] = _ina260_orin.readBusVoltage();
+            power[2] = _ina260_orin.readPower();
+            current[3] = _ina260_disp.readCurrent();
+            voltage[3] = _ina260_disp.readBusVoltage();
+            power[3] = _ina260_disp.readPower();
+            current[4] = _ina260_cam.readCurrent();
+            voltage[4] = _ina260_cam.readBusVoltage();
+            power[4] = _ina260_cam.readPower();
         }
 
         void printEnv() {
@@ -103,19 +143,43 @@ class Sensors {
         void printPower() {
             if (!sensorsValid)
                 return;
-            current[0] = _ina260_a.readCurrent();
-            voltage[0] = _ina260_a.readBusVoltage();
-            power[0] = _ina260_a.readPower();
+            current[0] = _ina260_sys.readCurrent();
+            voltage[0] = _ina260_sys.readBusVoltage();
+            power[0] = _ina260_sys.readPower();
 
-            String output = "$PWR_A," + String(current[0]) + "," + String(voltage[0]) + "," + String(power[0]);
+            String output = "$PWR_SYS," + String(current[0]) + "," + String(voltage[0]) + "," + String(power[0]);
             UI1.println(output);
             UI2.println(output);
 
-            current[1] = _ina260_b.readCurrent();
-            voltage[1] = _ina260_b.readBusVoltage();
-            power[1] = _ina260_b.readPower();
+            current[1] = _ina260_probe.readCurrent();
+            voltage[1] = _ina260_probe.readBusVoltage();
+            power[1] = _ina260_probe.readPower();
 
-            output = "$PWR_B," + String(current[1]) + "," + String(voltage[1]) + "," + String(power[1]);
+            output = "$PWR_PROBE," + String(current[1]) + "," + String(voltage[1]) + "," + String(power[1]);
+            UI1.println(output);
+            UI2.println(output);
+
+            current[2] = _ina260_orin.readCurrent();
+            voltage[2] = _ina260_orin.readBusVoltage();
+            power[2] = _ina260_orin.readPower();
+
+            output = "$PWR_ORIN," + String(current[1]) + "," + String(voltage[1]) + "," + String(power[1]);
+            UI1.println(output);
+            UI2.println(output);
+
+            current[3] = _ina260_disp.readCurrent();
+            voltage[3] = _ina260_disp.readBusVoltage();
+            power[3] = _ina260_disp.readPower();
+
+            output = "$PWR_DISP," + String(current[1]) + "," + String(voltage[1]) + "," + String(power[1]);
+            UI1.println(output);
+            UI2.println(output);
+
+            current[4] = _ina260_cam.readCurrent();
+            voltage[4] = _ina260_cam.readBusVoltage();
+            power[4] = _ina260_cam.readPower();
+
+            output = "$PWR_CAM," + String(current[1]) + "," + String(voltage[1]) + "," + String(power[1]);
             UI1.println(output);
             UI2.println(output);
             

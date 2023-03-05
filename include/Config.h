@@ -42,6 +42,12 @@ void SERCOM1_Handler()
   Serial3.IrqHandler();
 }
 
+// Power Control
+#define PROBE_POWER 4
+#define ORIN_POWER 6
+#define DISP_POWER 7
+#define CAM_POWER 38
+
 // Define GPIOs
 #define GPIO_1_IO 42
 #define GPIO_2_IO SWIO
@@ -49,8 +55,11 @@ void SERCOM1_Handler()
 
 // Define Triggers
 #define TRIG_4_0 A1
+#define TRIG_4_1 A2
 #define TRIG_1_0 8
-#define TRIG_0_0 4
+#define TRIG_1_1 9
+#define TRIG_0_0 PROBE_POWER
+#define TRIG_0_1 3
 
 // Define Trigger pins
 #define HIGH_MAG_CAM_TRIG GPIO_2_IO

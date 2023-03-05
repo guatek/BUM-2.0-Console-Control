@@ -398,8 +398,10 @@ class SystemControl
         if (_zerortc.getEpoch() - lastPowerOffTime > (unsigned int)cfg.getInt(CAMGUARD) && !cameraOn) {
             DEBUGPORT.println("Turning ON camera power...");
             cameraOn = true;
-            digitalWrite(CAMERA_POWER, HIGH);
-            digitalWrite(STROBE_POWER, LOW);
+            digitalWrite(CAM_POWER, HIGH);
+            digitalWrite(DISP_POWER, HIGH);
+            digitalWrite(ORIN_POWER, HIGH);
+            digitalWrite(PROBE_POWER, LOW);
             lastPowerOnTime = _zerortc.getEpoch();
             return true;
         }
@@ -412,8 +414,10 @@ class SystemControl
         if (_zerortc.getEpoch() - lastPowerOnTime > (unsigned int)cfg.getInt(CAMGUARD) && cameraOn) {
             DEBUGPORT.println("Turning OFF camera power...");
             cameraOn = false;
-            digitalWrite(CAMERA_POWER, LOW);
-            digitalWrite(STROBE_POWER, HIGH);
+            digitalWrite(CAM_POWER, LOW);
+            digitalWrite(DISP_POWER, LOW);
+            digitalWrite(ORIN_POWER, LOW);
+            digitalWrite(PROBE_POWER, HIGH);
             lastPowerOffTime = _zerortc.getEpoch();
             return true;
         }
@@ -534,7 +538,7 @@ class SystemControl
 
         // The system log string, note this requires enabling printf_float build
         // option work show any output for floating point values
-        sprintf(output, "%s,%s.%03u,%0.3f,%0.3f,%0.2f,%0.2f,%0.2f,%0.2f,%0.3f,%0.3f,%0.3f,%d,%d,%d,%d,%d,%d",
+        sprintf(output, "%s,%s.%03u,%0.3f,%0.3f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f",
 
             LOG_PROMPT,
             timeString,
@@ -544,16 +548,8 @@ class SystemControl
             _sensors.humidity, // in %
             _sensors.voltage[0] / 1000, // In Volts
             _sensors.power[0] / 1000, // in W
-            _sensors.power[1] / 1000, // in W
-            c,
-            t,
-            d,
-            state,
-            cameraOn,
-            flashType,
-            lowMagStrobeDuration,
-            highMagStrobeDuration,
-            frameRate
+            _sensors.voltage[1] / 1000, // In Volts
+            _sensors.power[1] / 1000 // in W
             
         );
 
