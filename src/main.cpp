@@ -58,13 +58,16 @@ void turnOnCamera() {
     }
 }
 
+// wrapper for turning system on
+void powerButtonEvent() {
+    sys.turnOnCamera();
+}
+
 
 
 void setup() {
 
     //Turn off strobe and camera power
-    pinMode(CAMERA_POWER, OUTPUT);
-    pinMode(STROBE_POWER, OUTPUT);
     pinMode(CAM_POWER, OUTPUT);
     pinMode(DISP_POWER, OUTPUT);
     pinMode(ORIN_POWER, OUTPUT);
@@ -77,6 +80,10 @@ void setup() {
 
     // Setup Sd Card Pins
     //pinMode(SDCARD_DETECT, INPUT_PULLUP);
+
+    // Power On Pin
+    pinMode(POWER_SWITCH, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(POWER_SWITCH), powerButtonEvent, CHANGE);
 
     // Start the debug port
     DEBUGPORT.begin(115200);

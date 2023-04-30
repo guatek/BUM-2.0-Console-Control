@@ -19,12 +19,9 @@
 #include "Utils.h"
 
 #define CMD_CHAR '!'
-#define PROMPT "DMCTRL > "
-#define LOG_PROMPT "$DMCTRL"
+#define PROMPT "BUMCTRL > "
+#define LOG_PROMPT "$BUMCTRL"
 #define CMD_BUFFER_SIZE 128
-
-#define STROBE_POWER 7
-#define CAMERA_POWER 6
 
 // Global Sensors
 Sensors _sensors;
@@ -538,7 +535,7 @@ class SystemControl
 
         // The system log string, note this requires enabling printf_float build
         // option work show any output for floating point values
-        sprintf(output, "%s,%s.%03u,%0.3f,%0.3f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f",
+        sprintf(output, "%s,%s.%03u,%0.3f,%0.3f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f",
 
             LOG_PROMPT,
             timeString,
@@ -549,7 +546,13 @@ class SystemControl
             _sensors.voltage[0] / 1000, // In Volts
             _sensors.power[0] / 1000, // in W
             _sensors.voltage[1] / 1000, // In Volts
-            _sensors.power[1] / 1000 // in W
+            _sensors.power[1] / 1000, // in W
+            _sensors.voltage[2] / 1000, // In Volts
+            _sensors.power[2] / 1000, // in W
+            _sensors.voltage[3] / 1000, // In Volts
+            _sensors.power[3] / 1000, // in W
+            _sensors.voltage[4] / 1000, // In Volts
+            _sensors.power[4] / 1000 // in W
             
         );
 

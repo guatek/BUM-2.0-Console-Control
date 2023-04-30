@@ -47,6 +47,7 @@ void SERCOM1_Handler()
 #define ORIN_POWER 6
 #define DISP_POWER 7
 #define CAM_POWER 38
+#define POWER_SWITCH A3
 
 // Define GPIOs
 #define GPIO_1_IO 42
@@ -64,7 +65,7 @@ void SERCOM1_Handler()
 // Define Trigger pins
 #define HIGH_MAG_CAM_TRIG GPIO_2_IO
 #define LOW_MAG_CAM_TRIG GPIO_3_IO
-#define HIGH_MAG_STROBE_TRIG TRIG_0_0
+#define HIGH_MAG_STROBE_TRIG TRIG_0_1
 #define LOW_MAG_STROBE_TRIG TRIG_4_0
 #define FLASH_TYPE_PIN TRIG_1_0
 
@@ -80,8 +81,8 @@ void SERCOM1_Handler()
 #define HWPORT3 Serial3
 
 #define UI1 HWPORT0
-#define UI2 HWPORT2
-#define JETSONPORT HWPORT1
+#define UI2 HWPORT1
+#define JETSONPORT HWPORT2
 #define RBRPORT HWPORT3
 
 // Define Config Settings
