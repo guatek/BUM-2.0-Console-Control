@@ -198,6 +198,7 @@ class SystemControl
 
                         else if (cmd != NULL && strncmp_ci(cmd,"BATTCHARGE",10) == 0) {
                             readBatterySOC(1, 0x0B);
+                            readBatterySOC(1, 0x0F);
                         }
 
                         // Reset the buffer and print out the prompt
