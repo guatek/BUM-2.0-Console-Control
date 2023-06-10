@@ -196,6 +196,10 @@ class SystemControl
                             batteryTest(0x0E);
                         }
 
+                        else if (cmd != NULL && strncmp_ci(cmd,"BATTCHARGE",10) == 0) {
+                            readBatterySOC(1, 0x0B);
+                        }
+
                         // Reset the buffer and print out the prompt
                         if (c == '\n')
                             in->write('\r');
@@ -694,7 +698,7 @@ class SystemControl
     {
 
         //uint8_t address = 0x0A; // 0x14, but Wire i2c adressing uses the high 7 bits so shift right
-        uint8_t reg = 0x04; // BatterySystemInfo() register
+        uint8_t reg = 0x01; // BatterySystemInfo() register
         uint8_t numBtyes = 2;
 
         DEBUGPORT.println("Getting status from Batt1...");
@@ -707,6 +711,33 @@ class SystemControl
 
         int reading = 0;
         if (Wire.available() >= numBtyes)
+        {
+            reading = Wire.read(); // receive low byte
+            reading |= Wire.read() << 8; // receive high byte
+            printHex(reading, 4);
+        }
+        else // nothing was received
+        {
+            DEBUGPORT.println("Nothing Received");
+        }
+    }
+
+    void readBatterySOC(uint8_t bat, uint8_t address) {
+
+        uint8_t reg = 0x0d; // BatterySystemInfo() register
+        uint8_t numBytes = 2;
+
+        // Start a new transmission
+        Wire.beginTransmission(address);
+        Wire.write(byte(reg)); // sets register pointer
+        Wire.endTransmission(false); // repeated start
+
+        Wire.requestFrom(address, numBytes); // request 2 bytes from slave device #112
+
+        delay(10);
+
+        int reading = 0;
+        if (Wire.available() >= numBytes)
         {
             reading = Wire.read(); // receive low byte
             reading |= Wire.read() << 8; // receive high byte
