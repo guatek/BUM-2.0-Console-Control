@@ -127,6 +127,9 @@ class Sensors {
                 // while (1) delay(10);
                 sensorsValid = false;
             }
+            else {
+                DEBUGPORT.println("BME280 Init OK");
+            }
 
             return sensorsValid;
 
@@ -153,6 +156,7 @@ class Sensors {
             current[4] = _ina260_cam.readCurrent();
             voltage[4] = _ina260_cam.readBusVoltage();
             power[4] = _ina260_cam.readPower();
+            
         }
 
         void printEnv() {

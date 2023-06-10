@@ -9,6 +9,7 @@
 SystemControl sys;
 
 int powerButtonCounter = 0;
+int powerButtonTimer = 0;
 
 // wrapper for turning system on
 void turnOnCamera() {
@@ -98,7 +99,7 @@ void setup() {
     // Load the last config from EEPROM
     sys.readConfig();
 
-    sys.loadScheduler();
+    //sys.loadScheduler();
     
 }
 
@@ -108,8 +109,14 @@ void loop() {
     sys.checkInput();
     sys.checkVoltage();
     sys.checkEnv();
-    sys.checkEvents();
-    sys.checkCameraPower(); 
+    sys.checkCameraPower();
+
+    powerButtonTimer++;
+
+    if (powerButtonTimer > 10) {
+        powerButtonTimer = 0;
+        powerButtonCounter = 0;
+    } 
 
     int logInt = sys.cfg.getInt(LOGINT);
 

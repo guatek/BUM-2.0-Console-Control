@@ -191,6 +191,11 @@ class SystemControl
                             goToSleep();
                         }
 
+                        else if (cmd != NULL && strncmp_ci(cmd,"TESTBATT",8) == 0) {
+                            batteryTest(0x0A);
+                            batteryTest(0x0E);
+                        }
+
                         // Reset the buffer and print out the prompt
                         if (c == '\n')
                             in->write('\r');
@@ -447,7 +452,9 @@ class SystemControl
         // @TODO: figure out why BME280 data is sometime corrupted
         if (_sensors.temperature < 5.0 || _sensors.temperature > 100.0) {
             DEBUGPORT.println("Error with sensor reading, skipping conversion and logging.");
-            //return false;
+            //DEBUGPORT.println("Resetting bus...");
+            //_sensors.begin();
+            return false;
         }
 
         // The system log string, note this requires enabling printf_float build
@@ -681,6 +688,45 @@ class SystemControl
             lowMagStrobeDuration = cfg.getInt(LOWMAGREDFLASH);
             highMagStrobeDuration = cfg.getInt(HIGHMAGREDFLASH);
         }
+    }
+
+    void batteryTest(uint8_t address) 
+    {
+
+        //uint8_t address = 0x0A; // 0x14, but Wire i2c adressing uses the high 7 bits so shift right
+        uint8_t reg = 0x04; // BatterySystemInfo() register
+        uint8_t numBtyes = 2;
+
+        DEBUGPORT.println("Getting status from Batt1...");
+
+        Wire.beginTransmission(address);
+        Wire.write(byte(reg)); // sets register pointer
+        Wire.endTransmission(false); // repeated start
+
+        Wire.requestFrom(address, numBtyes); // request 2 bytes from slave device #112
+
+        int reading = 0;
+        if (Wire.available() >= numBtyes)
+        {
+            reading = Wire.read(); // receive low byte
+            reading |= Wire.read() << 8; // receive high byte
+            printHex(reading, 4);
+        }
+        else // nothing was received
+        {
+            DEBUGPORT.println("Nothing Received");
+        }
+    }
+
+    void printHex(int num, int precision)
+    {
+        char tmp[16];
+        char format[128];
+
+        sprintf(format, "0x%%.%dX", precision);
+
+        sprintf(tmp, format, num);
+        DEBUGPORT.println(tmp);
     }
         
 };
