@@ -77,8 +77,6 @@ class SystemControl
     MovingAverage<float> avgTemp;
     MovingAverage<float> avgHum;
     MovingAverage<float> avgDepth;
-
-    Scheduler * sch;
     
     void readInput(Stream *in) {
       
@@ -175,19 +173,6 @@ class SystemControl
                         else if (cmd != NULL && strncmp_ci(cmd,SHUTDOWNJETSON,14) == 0) {
                             if (confirm(in, "Are you sure you want to shutdown jetson ? [y/N]: ", cfg.getInt(CMDTIMEOUT)))
                                 sendShutdown();
-                        }
-
-                        else if (cmd != NULL && strncmp_ci(cmd,NEWEVENT,8) == 0) {
-                            sch->timeEventUI(in, &cfg, cfg.getInt(CMDTIMEOUT));
-                        }
-
-                        else if (cmd != NULL && strncmp_ci(cmd,PRINTEVENTS,8) == 0) {
-                            sch->printEvents(in);
-                        }
-
-                        else if (cmd != NULL && strncmp_ci(cmd,CLEAREVENTS,8) == 0) {
-                            if (confirm(in, "Are you sure you want clear all events ? [y,N]: ", cfg.getInt(CMDTIMEOUT)))
-                                sch->clearEvents();
                         }
 
                         else if (cmd != NULL && strncmp_ci(cmd,GOTOSLEEP,9) == 0) {
@@ -376,12 +361,6 @@ class SystemControl
         }
     }
 
-    void loadScheduler() {
-        // Load scheduler
-        sch = new Scheduler(SCHEDULER_UID, &_flash);
-        storeLastFlashConfig();
-    }
-
     void configWatchdog() {
         // enable hardware watchdog if requested
         if (cfg.getInt(WATCHDOG) > 0) {
@@ -510,7 +489,6 @@ class SystemControl
     void writeConfig() {
         if (systemOkay) {
             cfg.writeConfig();
-            sch->writeToFlash();
         }
     }
 
@@ -651,31 +629,6 @@ class SystemControl
         }
         if (cfg.getInt(STANDBY) == 1) {
             _zerortc.standbyMode();
-        }
-    }
-
-    void checkEvents() {
-        int result = sch->checkEvents(&_zerortc);
-        if (result == 1 && !pendingPowerOn && !cameraOn) {
-            // Store the current settings and set new ones
-            storeLastFlashConfig();
-            cfg.set(FLASHTYPE, sch->flashType);
-            cfg.set(FRAMERATE, sch->frameRate);
-            if (sch->flashType == 1) {
-                cfg.set(LOWMAGREDFLASH, sch->lowMagDuration);
-                cfg.set(HIGHMAGREDFLASH, sch->highMagDuration);
-            }
-            else {
-                cfg.set(LOWMAGCOLORFLASH, sch->lowMagDuration);
-                cfg.set(HIGHMAGCOLORFLASH, sch->highMagDuration);
-            }
-            configureFlashDurations();
-            pendingPowerOn = true;
-            pendingPowerOnTimer = _zerortc.getEpoch();
-        }
-        else if (result == -1 && !pendingPowerOff && cameraOn) {
-            restoreLastFlashConfig();
-            sendShutdown();
         }
     }
 
