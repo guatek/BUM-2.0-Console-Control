@@ -41,6 +41,9 @@ RBRInstrument _rbr;
 // SBE39 CTD
 SBE39 _sbe39;
 
+// Reset the MCU from software if needed
+void (* resetFunc) (void) = 0;
+
 
 class SystemControl
 {
@@ -197,8 +200,7 @@ class SystemControl
                         }
 
                         else if (cmd != NULL && strncmp_ci(cmd,"BATTCHARGE",10) == 0) {
-                            readBatterySOC(1, 0x0B);
-                            readBatterySOC(1, 0x0F);
+                            estimateBatteryCharge();
                         }
 
                         // Reset the buffer and print out the prompt
@@ -282,6 +284,9 @@ class SystemControl
     int highMagStrobeDuration;
     int flashType;
     int frameRate;
+    int serialReadErrorCount;
+
+    float batteryCharge;
   
     SystemControl() {
         systemOkay = false;
@@ -293,6 +298,8 @@ class SystemControl
         cameraOn = false;
         lowVoltage = false;
         badEnv = false;
+        batteryCharge = 0.0;
+        serialReadErrorCount = 0;
     }
 
     bool begin() {
@@ -442,7 +449,7 @@ class SystemControl
         _sensors.update();
 
         // Build log string and send to UIs
-        char output[256];
+        char output[512];
 
         float c = -1.0;
         float t = -1.0;
@@ -456,19 +463,27 @@ class SystemControl
 
         // @TODO: figure out why BME280 data is sometime corrupted
         if (_sensors.temperature < 5.0 || _sensors.temperature > 100.0) {
-            DEBUGPORT.println("Error with sensor reading, skipping conversion and logging.");
+            printAllPorts("Error with sensor reading, skipping conversion and logging.");
             //DEBUGPORT.println("Resetting bus...");
             //_sensors.begin();
+            serialReadErrorCount++;
+            if (serialReadErrorCount > 10) {
+                printAllPorts("Resetting microcontroller due to persistent serial errors");
+                resetFunc();
+            }
             return false;
         }
 
+        // Serial data okay if we got here so reset the counter
+        serialReadErrorCount = 0;
+
         // The system log string, note this requires enabling printf_float build
         // option work show any output for floating point values
-        sprintf(output, "%s,%s.%03u,%0.3f,%0.3f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f",
+        sprintf(output, "%s,%s.%03u,%0.3f,%0.3f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f",
 
             LOG_PROMPT,
             timeString,
-            ((unsigned int) millis()) % 1000,
+            (unsigned int) ((unsigned int) millis()) % 1000,
             _sensors.temperature, // In C
             _sensors.pressure / 1000, // in kPa
             _sensors.humidity, // in %
@@ -481,7 +496,8 @@ class SystemControl
             _sensors.voltage[3] / 1000, // In Volts
             _sensors.power[3] / 1000, // in W
             _sensors.voltage[4] / 1000, // In Volts
-            _sensors.power[4] / 1000 // in W
+            _sensors.power[4] / 1000, // in W
+            batteryCharge // in %
             
         );
 
@@ -525,7 +541,7 @@ class SystemControl
     void checkCameraPower() {
 
         // Check for power off flag
-        if (pendingPowerOff && ((_sensors.power[0] < 9000) || (_zerortc.getEpoch() - pendingPowerOffTimer > (unsigned int)cfg.getInt(MAXSHUTDOWNTIME)))) {
+        if (pendingPowerOff && ((_sensors.power[2] < 9500) || (_zerortc.getEpoch() - pendingPowerOffTimer > (unsigned int)cfg.getInt(MAXSHUTDOWNTIME)))) {
             turnOffCamera();
             pendingPowerOff = false;
             return;
@@ -723,31 +739,61 @@ class SystemControl
         }
     }
 
-    void readBatterySOC(uint8_t bat, uint8_t address) {
+    int readBatterySOC(uint8_t bat, uint8_t cont_address, uint8_t batt_address) {
 
         uint8_t reg = 0x0d; // BatterySystemInfo() register
         uint8_t numBytes = 2;
 
+        // Select battery from controller
+        Wire.beginTransmission(cont_address);
+        Wire.write(byte(0x01)); // sets register pointer
+        Wire.write(byte(0)); // sets register pointer
+        Wire.write(bat); // sets register pointer
+        Wire.endTransmission(true); // repeated start
+
         // Start a new transmission
-        Wire.beginTransmission(address);
+        Wire.beginTransmission(batt_address);
         Wire.write(byte(reg)); // sets register pointer
         Wire.endTransmission(false); // repeated start
 
-        Wire.requestFrom(address, numBytes); // request 2 bytes from slave device #112
-
-        delay(10);
+        Wire.requestFrom(batt_address, numBytes); // request 2 bytes from slave device #112
 
         int reading = 0;
         if (Wire.available() >= numBytes)
         {
             reading = Wire.read(); // receive low byte
             reading |= Wire.read() << 8; // receive high byte
-            printHex(reading, 4);
+            //printHex(reading, 4);
         }
         else // nothing was received
         {
-            DEBUGPORT.println("Nothing Received");
+            DEBUGPORT.println("Nothing Received when querying battery");
+            reading = -1;
         }
+    
+        return reading;
+
+    }
+
+    void estimateBatteryCharge() {
+        float tempBatteryCharge = 0.0;
+        float readResult[4];
+        
+        readResult[0] = readBatterySOC(0x10, 0x0A, 0x0B);
+        readResult[1] = readBatterySOC(0x20, 0x0A, 0x0B);
+        readResult[2] = readBatterySOC(0x10, 0x0E, 0x0F);
+        readResult[3] = readBatterySOC(0x20, 0x0E, 0x0F);
+
+        for (int i = 0; i < 4; i ++) {
+            if (readResult[i] >= 0) {
+                tempBatteryCharge += readResult[i];
+            }
+            else {
+                return;
+            }
+        }
+
+        batteryCharge = tempBatteryCharge / 4.0;
     }
 
     void printHex(int num, int precision)

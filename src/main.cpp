@@ -10,6 +10,7 @@ SystemControl sys;
 
 int powerButtonCounter = 0;
 int powerButtonTimer = 0;
+int batteryCheckTimer = 0;
 
 // wrapper for turning system on
 void turnOnCamera() {
@@ -78,7 +79,7 @@ void setup() {
     sys.cfg.addParam(CHECKHOURLY, "0 = check every minute, 1 = check every hour", "", 0, 1, 0);
     sys.cfg.addParam(STARTUPTIME, "Time in seconds before performing any system checks", "s", 0, 60, 10);
     sys.cfg.addParam(WATCHDOG, "0 = no watchdog, 1 = hardware watchdog timer with 8 sec timeout","", 0, 1, 0);
-    sys.cfg.addParam(CAMGUARD,"Time guard between power ON/OFF events in seconds", "s", 10, 120, 30);
+    sys.cfg.addParam(CAMGUARD,"Time guard between power ON/OFF events in seconds", "s", 1, 120, 30);
     sys.cfg.addParam(TEMPLIMIT, "Temerature in C where controller will shutdown and power off camera","C", 0, 80, 55);
     sys.cfg.addParam(HUMLIMIT, "Humidity in % where controller will shutdown and power off camera","%", 0, 100, 60);
     sys.cfg.addParam(MAXSHUTDOWNTIME, "Max time in seconds we wait before cutting power to camera", "s", 15, 600, 60);
@@ -112,11 +113,16 @@ void loop() {
     sys.checkCameraPower();
 
     powerButtonTimer++;
+    batteryCheckTimer++;
 
     if (powerButtonTimer > 10) {
         powerButtonTimer = 0;
         powerButtonCounter = 0;
     } 
+
+    if (batteryCheckTimer > 5) {
+        sys.estimateBatteryCharge();
+    }
 
     int logInt = sys.cfg.getInt(LOGINT);
 
